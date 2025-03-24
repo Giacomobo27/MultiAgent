@@ -49,4 +49,4 @@ This module aims to introduce students to the concept of multi-agent systems. We
 
 1. **Clone or Download**  
    ```bash
-   git clone https://github.com/<YourUsername>/multiagent.git
+   git clone https://github.com/Giacomobo27/MultiAgent.git
