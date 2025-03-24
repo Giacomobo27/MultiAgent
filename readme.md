@@ -9,7 +9,6 @@ Welcome to the **Multi-Agent Systems (COMP41400)** module repository. This repos
 - **Module Title:** Multi-Agent Systems (COMP41400)  
 - **Academic Year:** 2024/2025  
 - **Trimester:** Autumn  
-- **Subject / School:** Computer Science  
 
 This module aims to introduce students to the concept of multi-agent systems. We will explore the fundamental concepts underpinning agent-based systems and examine how agents reason, communicate, and negotiate. You will also learn about agent programming languages and coordination protocols, as well as planning and negotiation strategies.
 
