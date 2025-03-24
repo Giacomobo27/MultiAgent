@@ -1,0 +1,9 @@
+agent VacBot { 
+module EIS ei; 
+module Console C; 
+rule +!main([string vacbot]) { 
+ ei.join("hw"); 
+ ei.link(vacbot); 
+ C.println("VacBot activated"); 
+} 
+}

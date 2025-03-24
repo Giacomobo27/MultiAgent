@@ -1,0 +1,15 @@
+agent Opponent extends Player{
+
+    // Player move selection strategy…
+rule +!move(int L) : free(2) { L=2; }
+rule +!move(int L) : free(8) { L=8; }
+rule +!move(int L) : free(5) { L=5; }
+rule +!move(int L) : free(9) { L=9; }
+rule +!move(int L) : free(6) { L=6; }
+rule +!move(int L) : free(1) { L=1; }
+rule +!move(int L) : free(7) { L=7; }
+rule +!move(int L) : free(3) { L=3; }
+rule +!move(int L) : free(4) { L=4; }
+
+
+}

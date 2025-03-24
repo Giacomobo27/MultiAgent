@@ -1,0 +1,148 @@
+import mams.web.HttpResponse;
+import mams.JSONConverter;
+import mams.JSONBuilder;
+import astra.jena.*;
+import com.fasterxml.jackson.databind.JsonNode;
+
+agent Main extends Shared {
+
+    //Apache Jena Knowledge Stores
+    module KnowledgeStore knowledgeStore; //To store knowledge about the players
+
+    types players {
+        formula player(string, string); //Agent role, agent URL: in my system
+    }
+    
+    initial api_index_url("http://localhost:8083/");
+
+    constant string XPlayerRole = "XPlayerRole";
+    constant string OPlayerRole = "OPlayerRole";
+
+    rule +!main(list l) : api_index_url(string game_url) {
+
+        messaging.installService("mams", "mams.messaging.MAMSMessageService");
+
+        MAMSAgent::!setup();
+        MAMSAgent::!created("base");
+        IntegratedInbox::!created("inbox");
+
+        system.createAgent("AgentZero", "Player");
+        system.setMainGoal("AgentZero", [game_url]);
+
+        system.createAgent("AgentOne", "Player");
+        system.setMainGoal("AgentOne", [game_url]);
+
+        system.sleep(2000);
+        
+        !game();
+    }
+
+    rule +!game() : api_index_url(string game_url) {
+        //TODO Part 2
+        knowledgeStore.getKnowledge(game_url + "players", "JSON-LD");
+        knowledgeStore.displayModel();
+    }
+
+    rule $knowledgeStore.read(string url) : strings.endsWith(url, "players") {
+        ///TODO Part 2
+        console.println("Players data received from " + url);
+
+        // Here you can handle the players' data, e.g., extracting player roles or states
+        // Example: Parse the player information from the Knowledge Store
+        
+        // Collect all available players from the knowledge store
+        int count = 1;
+        foreach(ttt.Agent(url, string agent_url)){
+            console.println("Available player: " + agent_url);
+            if(count %2 ~= 0)
+            {
+                +player(XPlayerRole, agent_url);
+                console.println("Assigned XPlayerRole to: " + agent_url);
+            }
+            else{
+                +player(OPlayerRole, agent_url);
+                console.println("Assigned OPlayerRole to: " + agent_url);
+            }
+            count = count +1;
+        }
+    
+        // Invoke form_actions to process available form actions returned by /players endpoint
+        !form_actions(url);
+        !link_actions(url);
+    }
+
+    rule +form_actions(string form_url, string http_method, list required_actions) : strings.endsWith(form_url, "registerGame") 
+     {
+        //TODO Part 2
+        JsonNode bodyJson = builder.createObject(); // Start with an empty object
+
+        // Loop through required actions and build the body based on player roles
+        forall (string item : required_actions) {
+            if (strings.equal(item, "ttt:XPlayerRole") & player(XPlayerRole, string playerX)) {
+                builder.addProperty(bodyJson, item, playerX); // Add XPlayerRole to the body
+            }
+            if (strings.equal(item, "ttt:OPlayerRole") & player(OPlayerRole, string playerO)) {
+                builder.addProperty(bodyJson, item, playerO); // Add OPlayerRole to the body
+            }
+        }
+        string bodyStr = builder.toJsonString(bodyJson);
+        HttpResponse response;
+
+        // Determine if it's a POST or PUT request, and send the request
+        if (strings.equal(http_method, "POST"))
+        {
+            // Send POST request with the JSON body
+            MAMSAgent::!post(form_url, bodyStr, response);
+            console.println(httpUtils.bodyAsString(response));
+        } else 
+        {
+            // Send PUT request with the JSON body
+            MAMSAgent::!put(form_url, bodyStr, response);
+            console.println(httpUtils.bodyAsString(response));
+        }
+
+        // Once the form is processed, clear the knowledge store
+        knowledgeStore.clear();
+        knowledgeStore.getKnowledgeFromString(httpUtils.bodyAsString(response), form_url);
+        console.println("Knowledge store updated after form submission.");
+
+    }        
+    
+    rule $knowledgeStore.read(string url) : strings.endsWith(url, "registerGame")
+    {
+        //TODO Part 2
+        if (ttt.hasID(url, string gameID)) 
+        {
+            console.println("Game ID is " + gameID);
+
+            query(player(XPlayerRole, string playerX));
+            query(player(OPlayerRole, string playerO));
+
+            // Send game details to both players, including their role and opponent
+                
+            send(inform, playerX, game(gameID, playerX, playerO)); // Inform X player about the game and the opponent
+            send(inform, playerO, game(gameID, playerO, playerX)); // Inform O player about the game and the opponent
+
+            console.println("Game details sent to players: " + playerX + " and " + playerO);
+        }
+    }
+
+    /**
+     * Means-end reasoning
+     * GOAL: !clear_knowledge
+     * This keeps things HATEOAS-y, i.e. each response from the API contains all the information the agent needs to 
+     * play a game; so the links, forms and knowledge store should be cleared down in between API calls
+     * to reflect this (and avoid situations where the agent may think it has actions available to it which are no longer valid)
+     */
+     rule +!clear_knowledge() {
+        knowledgeStore.clear();
+        //Clear down ALL form action and link action beliefs
+        foreach(form_actions(string anyForm, string method_name, list any_list)) {
+            -form_actions(anyForm, method_name, any_list);
+        }
+        foreach(link_actions(string anyLink)) {
+            -link_actions(anyLink);
+        }
+    }
+
+}

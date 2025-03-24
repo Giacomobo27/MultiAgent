@@ -1,0 +1,34 @@
+package section2;
+
+agent Homer extends Daily {
+    types homer {
+        formula in(string, string);
+        formula activity(string);
+        formula needs(string, string);
+    }
+
+    //------------------------------------------------------------
+    // DELIBERATION RULES
+    //------------------------------------------------------------
+    rule +clock(int D, int H) : daily_schedule(H, string activity) {
+        !activity(activity);
+    }
+
+    //------------------------------------------------------------
+    // MEANS-ENDS RULES
+    //------------------------------------------------------------
+    rule +!activity(string activity) : activity(activity) { }
+
+    rule +!activity(string activity)
+            : needs(activity, string item) & in(string target, item)
+            & current(target) {
+        -+activity(activity);
+        C.println("Doing: " + activity);
+    }
+
+    rule +!activity(string activity)
+            : needs(activity, string item) & in(string target, item) {
+        !current(target);
+        !activity(activity);
+    }
+}

@@ -1,0 +1,30 @@
+
+
+agent BetterR extends Player {
+
+types strategy {
+     formula winningLine(int,int,int);
+}
+
+   
+
+inference winningLine(int L1, int L2, int L3):- line(L1, L2, L3) & player(string T) &
+(played(T, L1) & played(T, L2) & ~played(T, L3) & free(L3));
+
+    
+// move to winning line
+rule +!move(int L) : winningLine(int L1, int L2, int L3) {
+    C.println("moving to " + L3);
+    L=L3;
+}
+
+// else make a random move to a free 
+rule +!move(int L) {
+C.println("Random move");
+int L2 = (math.randomInt() % 9) + 1;
+while (~free(L2)) {
+L2 = (math.randomInt() % 9) + 1;
+}
+L=L2;
+}
+}

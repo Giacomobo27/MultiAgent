@@ -1,0 +1,7 @@
+package section2;
+
+agent MoverExample extends Mover {
+    rule +!main(list args) {
+        !current("lounge");
+    }
+}

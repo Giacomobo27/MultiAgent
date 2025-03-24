@@ -1,0 +1,170 @@
+agent Player {
+    module Console C;
+    module System system;
+    module Math math;
+
+types world {   //token X O ?
+    formula free(int);
+    formula winner(string);
+    formula played(string, int); 
+    formula loser(string);
+    formula drawn();
+    formula opponent(string); //player2 
+    formula move(int);
+    formula turn(string);
+    formula token(string);
+    formula notfinished();
+
+    formula player(string);  // X or O
+    formula myName(string); // player1
+    formula location(int);
+    formula line(int, int, int);
+
+    formula is(string,string);  //is(player1,X)
+}
+
+
+//all locations
+initial location(1), location(2), location(3), location(4), location(5), location(6), location(7), location(8), location(9);
+//winning lines
+initial line(1, 2, 3), line(1, 5, 9), line(1, 4, 7), line(2, 5, 8), line(3, 6, 9), line(3, 5, 7), line(4, 5, 6), line(7, 8, 9);
+initial token("X"), token("O");
+//all free locations, dovrebbero essere dedotte dall inference
+
+
+
+inference free(int L) :-
+    location(L) & ~played(string T, L);
+
+inference winner(string T) :-
+    line(int L1, int L2, int L3) & played( T, L1) & played(T, L2) & played(T, L3);
+
+inference loser(string T) :-
+    player(T) & winner(string T2) & T ~= T2;
+
+inference drawn() :-
+    ~free(int L) & ~winner(string T2); 
+    // in generale se sono finiti tutti gli spazi e non è uscito ancora il belief che ce un vincitore vuol dire che è draw
+
+inference notfinished() :-
+   ~drawn() & ~winner(string T2); 
+
+    
+
+    
+
+rule +!main([string T, string opp, boolean turn]){
+
+    if (~played(string K, int L)) 
+  C.println("Game has not Started");
+
+  if(free(int L))
+  C.println("first free location: "+L);
+
+
+    +player(T); // my token
+    +opponent(opp); //opp name
+
+    string opptoken;
+
+     if(T=="X"){
+        opptoken="O";
+    }
+    else if(T=="O"){
+        opptoken="X";
+    }
+    
+    +player(opptoken); // opp token
+
+
+
+    if(opp=="player2"){
+     //   +myName("player1"); //my name
+       // +is("player1", T); //is predicate
+     //   +is("player2", opptoken);  // opp predicate
+    }
+    else if(opp=="player1"){
+      //  +myName("player2");
+       // +is("player1", opptoken);
+      //  +is("player2", T);
+    }
+
+
+
+ 
+    if(turn){
+        +turn(T);
+        C.println("Match started with: " + T);
+    }
+    else{
+        C.println("Match doesnt started with: " + T);
+
+    }
+
+}
+
+// Making a move, its called only here, deliberation rule
+
+rule +turn(string T) : player(T) {
+C.println("turn!!!");
+
+if(turn(T) & winner(string W)){
+    -turn(T);
+    C.println("Winner: " + W);
+}
+if(turn(T) & drawn()){
+    -turn(T);
+    C.println("Drawn!");
+}
+else{
+!move(int L); // L o decide move definito giu e lo pone in played dopo
+!played(T, L); 
+
+
+-turn(T);
+}
+}
+
+
+rule +!played(string T, int L) : free(L) {
++played(T, L);
+
+//send msg to inform opponent
+
+string opp1= "player1";
+string opp2= "player2";
+if(opponent(opp1)){
+send(inform, opp1, played(T, L));  
+}
+if(opponent(opp2)){
+send(inform, opp2, played(T, L));  
+}
+
+}
+
+
+//rule message that recieve msg and updates game state
+rule @message( inform, string sender,  played(string T, int L)): notfinished(){  //maybe bug
+    + played(T, L);
+     if(free(int k)) C.println("first free location: "+k);
+ 
+    C.println("msg recieved from sender:" + sender);
+
+
+
+    if(T=="X"){
+        +turn("O");
+    }
+    if(T=="O"){
+         +turn("X");
+    }
+
+}
+
+rule +played(string P, int L) {
+C.println("Player " + P + " played at location: " + L);
+}
+
+
+
+}

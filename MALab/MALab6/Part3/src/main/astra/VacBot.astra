@@ -1,0 +1,126 @@
+
+
+agent VacBot { 
+module EIS ei; 
+module Console C; 
+module Routing R;
+
+types world {
+    formula free(string);
+    formula route(list); //  list of moves created by routeTo ListTerm
+    
+}
+
+
+
+inference free(string S) :- ei.square( S ,"dust") | ei.square( S ,"empty");
+
+rule +!main([string vacbot]) { 
+ ei.join("hw"); 
+ ei.link(vacbot); 
+ C.println("VacBot activated");
+} 
+
+
+rule +!update(): ei.location(long X, long Y) & ei.direction(string D) {
+     C.println("update");
+    if(X>=R.maxX()){
+        R.updateBoundary(X+4, R.maxY());
+    }
+    if(Y>=R.maxY()){
+        R.updateBoundary(R.maxX(),Y+4);
+    }
+    foreach(ei.square(string location, "obstacle") & ~R.obstacle(X, Y, D, location)) { 
+      R.recordObstacle(X, Y, D, location); // updates obstacle in the map
+}
+}
+
+rule +!route() : ei.location(long x, long y) {  //right or not?
+    list L = R.routeTo( x, y, 4l, 4l); //list of moves 
+  //  C.println("L=" + L);
+    //R.displayMap();
+    C.println("ROUTING:::::::");
+}
+
+
+rule +!task(string action) : ei.square("here", "dust"){
+
+ ei.clean(); 
+ action="clean";
+ wait(ei.task("none"));
+ !task(action);
+}
+
+rule +!task(string action) : ei.square("forward", "dust"){
+ ei.move("forward"); 
+ action = "move"; 
+}
+
+rule +!task(string action) : ei.square("left", "dust"){
+ ei.move("left"); 
+ action = "move"; 
+}
+
+rule +!task(string action) : ei.square("right", "dust"){
+ ei.move("right"); 
+ action = "move"; 
+}
+
+rule +!task(string action) : free("forward"){
+ ei.move("forward"); 
+ action = "move"; 
+}
+
+rule +!task(string action) : free("left"){
+ ei.move("left"); 
+ action = "move"; 
+}
+
+rule +!task(string action) : free("right"){
+ ei.move("right"); 
+ action = "move"; 
+}
+
+rule +!task(string action) : route([funct move]) { 
+-route([move]); 
+ !go(move, action); 
+}
+rule +!task(string action) : route([funct move| list L]) { 
+ -+route(L); 
+ !go(move, action); 
+} 
+
+rule +!go(move(string direction), string action) { 
+ ei.move(direction); 
+action = "direction"; 
+
+}
+
+rule +!task(string action) {
+    ei.dumpState();
+     C.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+    C.println("no action");
+    ei.move("right"); 
+ 
+    C.println("turn around");
+     ei.move("right"); 
+     wait(ei.move("right"));
+     ei.move("forward"); 
+    wait(ei.move("forward"));
+    !update();
+}
+
+
+
+
+
+
+
+rule +$ei.event(location(long X, long y)) {  //deliberation rule
+     !update();
+     !route();
+     !task(string action); 
+     ei.dumpState();
+}
+
+}

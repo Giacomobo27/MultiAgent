@@ -1,0 +1,43 @@
+agent light {
+    module Console c;
+    module Debug d;
+    module System s;
+    //constant l1 , s1 = Lt , Sw
+    //constant state on off = St
+
+    types ls {
+        formula switch(string, string);
+        formula light(string,string);
+        formula connected(string,string);
+        formula transition(string,string);
+
+    }
+
+    initial switch("s1","off");
+    initial light("l1","off");
+    initial connected("s1","l1");
+    initial transition("off", "on");
+    initial transition("on", "off");
+    //because the switch can go from on to off, actually in practical its useless
+    //but it helps logically 
+
+
+    rule +!main(list args) {
+        +switch("s1", "on");
+    }
+
+    rule +light(string Lt, string St) {
+        c.println("Light:"+ Lt +" is in state:" + St);
+    }
+
+    rule +switch( string Sw, string St ) : connected( Sw, string Lt ) { 
+
+        !light(Lt, St);}
+
+    rule +!light(string Lt, string St) : transition(string OldSt, St) & light( Lt , OldSt){
+        -light(Lt, OldSt); +light( Lt, St);
+    }
+    rule +!light(string Lt, string St) { }
+
+
+}

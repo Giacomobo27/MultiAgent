@@ -1,0 +1,10 @@
+package section2;
+
+agent Daily extends Mover,Clock {
+    //------------------------------------------------------------
+    // DELIBERATION RULES
+    //------------------------------------------------------------
+    rule +clock(int D, int H) : daily_schedule(H, string location) {
+        !current(location);
+    }
+}

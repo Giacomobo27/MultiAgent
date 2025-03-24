@@ -1,0 +1,1 @@
+i have encountered some problems compiling, i have resolved by killing all previous active java process using the cmd "Get-Process *java* | Stop-Process -Force" on powershell

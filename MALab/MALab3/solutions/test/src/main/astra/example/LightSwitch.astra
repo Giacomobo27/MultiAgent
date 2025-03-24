@@ -1,0 +1,22 @@
+package example;
+
+agent LightSwitch {
+    module Console C;
+    module example.Switch switch;
+    module example.Light light;
+
+    types ls {
+        formula switch(string);
+        formula light(string);
+        formula transition(string, string);
+    }
+
+    initial transition("off", "on"), transition("on", "off");
+
+    rule +!main(list args) { !switch("on"); }
+    rule +!switch(string S) : transition(string R, S) & switch(R) { switch.set(S); }
+    rule +switch(string S) { !light(S); }
+    rule +!light(string S) : transition(string R, S) & light(R) { light.set(S); }
+    rule +!light(string S) { }
+    rule +light(string S) { C.println("Light is in state " + S); }
+}

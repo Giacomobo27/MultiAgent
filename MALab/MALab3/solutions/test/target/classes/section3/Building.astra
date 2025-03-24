@@ -1,0 +1,105 @@
+package section3;
+
+agent Building extends section2.Clock {
+    module Console C;
+    module System S;
+    
+    types light {
+        formula switch(string, string);
+        formula light(string, string);
+        formula connected(string, string);
+        formula transition(string, string);
+        formula light_threshold(int);
+        formula light_level(int);
+        formula hour_light(int, int);
+        formula daily_activity(int, string, string);
+    }
+
+    initial switch("s1", "off"), light("l1", "on");
+    initial connected("s1", "l1");
+    initial transition("off","on"), transition("on","off");
+
+    // Light Level domain model
+    initial hour_light(0, 1), hour_light(1,1), hour_light(2,1), hour_light(3,1);
+    initial hour_light(4, 1), hour_light(5,1), hour_light(6,100), hour_light(7,250);
+    initial hour_light(8, 400), hour_light(9,800), hour_light(10,1000), hour_light(11,1000);
+    initial hour_light(12, 1000), hour_light(13,1000), hour_light(14,1000), hour_light(15,800);
+    initial hour_light(16, 700), hour_light(17,600), hour_light(18,600), hour_light(19,400);
+    initial hour_light(20, 100), hour_light(21,100), hour_light(22,1), hour_light(23,1);
+    initial light_threshold(750);
+    initial daily_activity(9, "s1", "on"), daily_activity(17, "s1", "off");
+
+    /**
+     * NEW RULE:
+     * Handle the ticking of the clock. This does 2 things:
+     * - updates the light level
+     * - checks if an user actions are performed and applies them...
+     */
+    rule +clock(int D, int H) : hour_light(H, int L) {
+        C.println("Light Level is: " + L);
+        -+light_level(L);
+
+        // Check if the 
+        foreach(daily_activity(H, string Sw, string St)) {
+            C.println("User Action: Switch " + Sw + " is turned: " + St);
+            !switch(Sw, St);
+        }
+    }
+
+    /**
+     * NEW RULE:
+     * If the light is above the threshold, then the light should be off
+     */
+    rule +light_level(int L) : light_threshold(int T) & L > T {
+        foreach(light(string Lt, "on")) {
+            !light(Lt, "off");
+        }
+    }
+
+    /**
+     * NEW RULE:
+     * If the light is below the threshold, then all lights that are switched on
+     * should be on...
+     */
+    rule +light_level(int L) {
+        foreach(switch(string S, "on") & connected(S, string Lt) & light(Lt, "off")) {
+            !light(Lt, "on");
+        }
+    }
+
+    rule +!switch(string S, string state) : switch(S, state) { }
+    rule +!switch(string S, string state)
+            : transition(string from, state) & switch(S, from) {
+        -switch(S, from);
+        +switch(S, state);
+    }
+    
+    atomic rule +switch(string S, string state) { 
+        foreach(connected(S, string L)) {
+            !light(L, state);
+        }
+    }
+
+    /**
+     * NEW RULE:
+     * Special rule that checks to see if the light level is above the threshold. If it is
+     * do nothing because lights can only be turned on when the light level is below the
+     * threshold.
+     */
+    rule +!light(string L, "on") : light_level(int Lv) & light_threshold(int T) & Lv > T {
+        C.println("Light activation blocked because light level: " + L + " is greater than: " + T);
+    }
+
+    rule +!light(string L, string state) : light(L, state) { }
+
+    rule +!light(string L, string state)
+            : transition(string from, state) & light(L, from) {
+        -light(L, from);
+        +light(L, state);
+    }
+
+    rule +light(string L, string state) {
+        C.println("Light: " + L +" is in state: " + state);
+    }
+
+}

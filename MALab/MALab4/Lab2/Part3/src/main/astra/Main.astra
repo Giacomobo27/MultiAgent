@@ -1,0 +1,62 @@
+agent Main {
+    module EIS ei;
+    module Console C;
+    module System S;
+
+    rule +!main(list args) {
+        ei.launch("hw","dependency/tower-1.3.0.jar");
+        ei.init();
+        ei.start();
+        ei.link("gripper");
+        C.println("Press New Block until block d is created...");
+
+       // wait(ei.block("d"));
+       // C.println("You did it!");
+       //uso il primo rule invece
+
+    }
+    //deliberation rule
+    rule +$ei.event(block("d")) {
+        C.println("You did it! new");
+        !tower("a", "b", "c");
+       //!tower("d","c","b");
+    } 
+
+    //means to end rule kinda
+
+    rule +!tower(string A, string B, string C){
+
+        ei.pickup(B);
+        wait(ei.holding(B));
+        ei.putdown(B, C);
+        wait(ei.on(B, C));
+
+        ei.pickup(A);
+        wait(ei.holding(A));
+        ei.putdown(A, B);
+        wait(ei.on(A, B));
+        C.println("TOWER BUILT");
+        S.sleep(1000);
+        C.println("FINISHED");
+
+    }
+
+
+
+
+
+    rule +$ei.event(holding(string Y)) {
+        C.println("Picked up: " + Y);
+    }
+
+    rule +$ei.event(funct Y) {
+        C.println("Handling belief update: " + Y);
+    }
+
+    rule +$ei.event(funct belief) {
+        C.println("New Perception Event: " + belief);
+    }
+    rule +$ei.event(on(string A, string B)) {
+        C.println(A + " has been placed on: " + B);
+    }   
+}

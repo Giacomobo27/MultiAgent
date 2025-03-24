@@ -1,0 +1,13 @@
+package section2;
+
+agent DailyExample extends Daily {
+    initial daily_schedule(6, "kitchen");
+    initial daily_schedule(7, "bathroom");
+    initial daily_schedule(8, "lounge");
+    initial daily_schedule(12, "kitchen");
+    initial daily_schedule(13, "lounge");
+    initial daily_schedule(17, "kitchen");
+    initial daily_schedule(18, "dining_room");
+    initial daily_schedule(19, "lounge");
+    initial daily_schedule(22, "bedroom");
+}

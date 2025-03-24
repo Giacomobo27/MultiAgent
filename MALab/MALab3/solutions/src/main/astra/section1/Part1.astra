@@ -1,0 +1,38 @@
+package section1;
+
+agent Part1 {
+    module Console C;
+    
+    types light {
+        formula switch(string, string);
+        formula light(string, string);
+        formula connected(string, string);
+        formula transition(string, string);
+    }
+
+    initial switch("s1", "off"), light("l1", "off");
+    initial connected("s1", "l1");
+    initial transition("off","on"), transition("on","off");
+
+    rule +!main(list args) {
+        +switch("s1", "on");
+    }
+    
+    rule +switch(string S, string state)
+            : connected(S, string L) { 
+        !light(L, state);
+    }
+
+
+    rule +!light(string L, string state)
+            : transition(string from, state) & light(L, from) {
+        -light(L, from);
+        +light(L, state);
+    }
+    
+    rule +!light(string Lt, string St) { }
+
+    rule +light(string L, string state) {
+        C.println("Light: " + L +" is in state: " + state);
+    }
+} 

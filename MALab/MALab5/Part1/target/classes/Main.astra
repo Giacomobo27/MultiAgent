@@ -1,0 +1,21 @@
+agent Main extends Player {
+
+rule +!main(list args) {
+  if (~played(string T, int L)) 
+  C.println("Game has not Started");
+
+  if(winner(string X))
+  C.println("Game won by: " + X);
+
+  if(loser(string Y))
+  C.println("Game lost by: " + Y);
+
+  if(drawn())
+  C.println("Draw");
+
+  if(free(int L))
+  C.println("location: "+L);
+  +turn("X");
+}
+
+}

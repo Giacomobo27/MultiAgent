@@ -1,0 +1,136 @@
+import mams.web.HttpResponse;
+import mams.JSONConverter;
+import mams.JSONBuilder;
+import astra.jena.*;
+import com.fasterxml.jackson.databind.JsonNode;
+
+agent Main extends Shared {
+
+    //Apache Jena Knowledge Stores
+    module KnowledgeStore knowledgeStore; //To store knowledge about the players
+
+    types players {
+        formula player(string, string); //Agent role, agent URL: in my system
+    }
+    
+    initial api_index_url("http://localhost:8083/");
+
+    constant string XPlayerRole = "XPlayerRole";
+    constant string OPlayerRole = "OPlayerRole";
+
+    rule +!main(list l) : api_index_url(string game_url) {
+
+        messaging.installService("mams", "mams.messaging.MAMSMessageService");
+
+        MAMSAgent::!setup();
+        MAMSAgent::!created("base");
+        IntegratedInbox::!created("inbox");
+
+        system.createAgent("AgentZero", "Player");
+        system.setMainGoal("AgentZero", [game_url]);
+
+        system.createAgent("AgentOne", "Player");
+        system.setMainGoal("AgentOne", [game_url]);
+
+        system.sleep(2000);
+        
+        !game();
+    }
+
+    rule +!game() : api_index_url(string game_url) {
+        //TODO Part 2
+        knowledgeStore.getKnowledge(game_url + "players", "JSON-LD");
+        knowledgeStore.displayModel();
+        !form_actions(game_url + "players");
+    }
+
+    rule $knowledgeStore.read(string url) : strings.endsWith(url, "players") {
+        ///TODO Part 2
+        console.println(url);
+
+        
+        // Here you can handle the players' data, e.g., extracting player roles or states
+        // Example: Parse the player information from the Knowledge Store
+
+        int player_index = 0;
+        //Get the possible players
+        foreach(ttt.Agent(url, string agent_url)){
+            console.println("Available player: " + agent_url);
+            if(player_index == 0){
+                +player(XPlayerRole, agent_url);
+                console.println("Assigned XPlayerRole to: " + agent_url);
+        }
+            if(player_index == 1){
+                +player(OPlayerRole, agent_url);
+                console.println("Assigned OPlayerRole to: " + agent_url);
+        }
+            player_index = player_index + 1;
+        }
+    }
+
+    rule +form_actions(string form_url, string http_method, list required_actions) : 
+        strings.endsWith(form_url, "registerGame") 
+    {
+        //TODO Part 2
+        JsonNode bodyJson = builder.createObject();
+
+        forall(string item : required_actions) {
+            if (strings.equal(item, "ttt:OPlayerRole")
+                & player(OPlayerRole, string playerURL)){
+                builder.addProperty(bodyJson, item, playerURL);
+            }
+            if (strings.equal(item, "ttt:XPlayerRole")
+                & player(XPlayerRole, string playerURL)){
+                builder.addProperty(bodyJson, item, playerURL);
+            }
+        }
+
+        string bodyStr = builder.toJsonString(bodyJson);
+
+        if(http_method == "POST") {
+            MAMSAgent::!post(form_url, bodyStr, HttpResponse response);
+            console.println(httpUtils.bodyAsString(response));
+           !clear_knowledge();
+            knowledgeStore.getKnowledgeFromString(httpUtils.bodyAsString(response), form_url);
+        } 
+
+        if(http_method == "PUT") {
+                MAMSAgent::!put(form_url, bodyStr, HttpResponse response);
+                console.println(httpUtils.bodyAsString(response));
+         !clear_knowledge();
+          knowledgeStore.getKnowledgeFromString(httpUtils.bodyAsString(response), form_url);
+        }
+
+    }
+    
+    rule $knowledgeStore.read(string url) : strings.endsWith(url, "registerGame") {
+        //TODO Part 2
+
+        if (ttt.hasID(url, string gameID) & player(XPlayerRole, string player1URL) & player(OPlayerRole, string player2URL)){
+            console.println("Game ID is " + gameID);
+            send(inform, player1URL, game(gameID, XPlayerRole, player2URL));
+            send(inform, player2URL, game(gameID, OPlayerRole, player1URL));
+            
+            console.println("Game details sent to players: " + XPlayerRole + " and " + OPlayerRole);
+        }
+    }
+
+    /**
+     * Means-end reasoning
+     * GOAL: !clear_knowledge
+     * This keeps things HATEOAS-y, i.e. each response from the API contains all the information the agent needs to 
+     * play a game; so the links, forms and knowledge store should be cleared down in between API calls
+     * to reflect this (and avoid situations where the agent may think it has actions available to it which are no longer valid)
+     */
+     rule +!clear_knowledge() {
+        knowledgeStore.clear();
+        //Clear down ALL form action and link action beliefs
+        foreach(form_actions(string anyForm, string method_name, list any_list)) {
+            -form_actions(anyForm, method_name, any_list);
+        }
+        foreach(link_actions(string anyLink)) {
+            -link_actions(anyLink);
+        }
+    }
+
+}

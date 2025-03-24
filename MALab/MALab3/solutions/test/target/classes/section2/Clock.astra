@@ -1,0 +1,35 @@
+package section2;
+
+agent Clock {
+    module Console C;
+    module System S;
+
+    types daily {
+        formula clock(int, int);
+        formula daily_schedule(int, string);
+    }
+
+    constant int SIM_DAYS = 3;
+    constant int DELAY = 1000;
+
+    initial !clock(0, 0);
+
+    //------------------------------------------------------------
+    // SIMULATION OF TIME
+    //------------------------------------------------------------
+    rule +!clock(SIM_DAYS, 24) {
+        C.println("SIMULATION FINISHED!");
+        S.exit();
+    }
+
+    rule +!clock(int D, 24) {
+        !clock(D+1, 0);
+    }
+    
+    rule +!clock(int D, int H) {
+        -+clock(D, H);
+        C.println("Time: " + H + " [DAY="+D+"]");
+        S.sleep(DELAY);
+        !!clock(D, H+1);
+    }
+}

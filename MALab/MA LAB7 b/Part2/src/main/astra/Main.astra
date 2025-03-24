@@ -1,0 +1,134 @@
+import mams.web.HttpResponse;
+import mams.JSONConverter;
+import mams.JSONBuilder;
+import astra.jena.*;
+import com.fasterxml.jackson.databind.JsonNode;
+
+agent Main extends Shared {
+
+    //Apache Jena Knowledge Stores
+    module KnowledgeStore knowledgeStore; //To store knowledge about the players
+
+    types players {
+        formula player(string, string); //Agent role, agent URL: in my system
+    }
+    
+    initial api_index_url("http://localhost:8083/");
+
+    constant string XPlayerRole = "XPlayerRole";
+    constant string OPlayerRole = "OPlayerRole";
+
+    rule +!main(list l) : api_index_url(string game_url) {
+
+        messaging.installService("mams", "mams.messaging.MAMSMessageService");
+
+        MAMSAgent::!setup();
+        MAMSAgent::!created("base");
+        IntegratedInbox::!created("inbox");
+
+        system.createAgent("AgentZero", "Player");
+        system.setMainGoal("AgentZero", [game_url]);
+        system.createAgent("AgentOne", "Player");
+        system.setMainGoal("AgentOne", [game_url]);
+
+        system.sleep(2000);
+        
+        !game();
+    }
+
+    rule +!game() : api_index_url(string game_url) {
+        //TODO Part 2
+
+        knowledgeStore.getKnowledge(game_url, "JSON-LD");
+    }
+
+    rule $knowledgeStore.read(string url) : strings.endsWith(url, "players") {
+        ///TODO Part 2
+        knowledgeStore.displayModel();
+        //Get the possible players
+        int counter = 0;
+        foreach(ttt.Agent(url, string agent_url)){
+            console.println("Available player: " + agent_url);
+            if (counter == 0) {
+
+                +player(XPlayerRole, agent_url);
+                console.println("XPlayer: " + agent_url);
+            } else if (counter == 1) {
+
+                +player(OPlayerRole, agent_url);
+                console.println("OPlayer: " + agent_url);
+            }
+            counter = counter + 1;
+
+        }
+
+        !form_actions(url);
+    }
+
+    rule +form_actions(string form_url, string http_method, list required_actions) : strings.endsWith(form_url, "registerGame") {
+        //TODO Part 2
+        console.println("Processing form actions for: " + form_url);
+
+        // 创建JSON构建器实例
+        JSONBuilder builder = new JSONBuilder();
+        JsonNode bodyJson = builder.createObject();
+
+        // 遍历所需的动作并构建JSON请求主体
+        forall(string item : required_actions) {
+            // 检查并添加OPlayerRole
+            if (strings.equal(item, "ttt:OPlayerRole") & player(OPlayerRole, string playerURL)) {
+                builder.addProperty(bodyJson, item, playerURL);
+            }
+            // 检查并添加XPlayerRole
+            else if (strings.equal(item, "ttt:XPlayerRole") & player(XPlayerRole, string playerURL)) {
+                builder.addProperty(bodyJson, item, playerURL);
+            }
+        }
+
+        // 打印生成的JSON请求以供调试
+        console.println("Generated JSON body: " + builder.toString(bodyJson));
+
+        // 检查表单是否需要POST或PUT请求
+        if (strings.equal(http_method, "POST")) {
+            console.println("Sending POST request to: " + form_url);
+            HttpResponse response = http.post(form_url, builder.toString(bodyJson));
+            console.println("Response: " + httpUtils.bodyAsString(response));
+            // 处理响应
+            knowledgeStore.getKnowledgeFromString(httpUtils.bodyAsString(response), form_url);
+        } else if (strings.equal(http_method, "PUT")) {
+            console.println("Sending PUT request to: " + form_url);
+            HttpResponse response = http.put(form_url, builder.toString(bodyJson));
+            console.println("Response: " + httpUtils.bodyAsString(response));
+            // 处理响应
+            knowledgeStore.getKnowledgeFromString(httpUtils.bodyAsString(response), form_url);
+        } else {
+            console.println("Unsupported HTTP method: " + http_method);
+        }
+
+        // 清理知识库
+        !clear_knowledge();
+    }        
+    
+    rule $knowledgeStore.read(string url) : strings.endsWith(url, "registerGame") {
+        //TODO Part 2
+    }
+
+    /**
+     * Means-end reasoning
+     * GOAL: !clear_knowledge
+     * This keeps things HATEOAS-y, i.e. each response from the API contains all the information the agent needs to 
+     * play a game; so the links, forms and knowledge store should be cleared down in between API calls
+     * to reflect this (and avoid situations where the agent may think it has actions available to it which are no longer valid)
+     */
+     rule +!clear_knowledge() {
+        knowledgeStore.clear();
+        //Clear down ALL form action and link action beliefs
+        foreach(form_actions(string anyForm, string method_name, list any_list)) {
+            -form_actions(anyForm, method_name, any_list);
+        }
+        foreach(link_actions(string anyLink)) {
+            -link_actions(anyLink);
+        }
+    }
+
+}

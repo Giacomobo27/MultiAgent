@@ -1,0 +1,16 @@
+agent Main {
+
+ module System system;
+ module Console C;
+
+rule +!main(list args) {
+  system.createAgent("player1","Player");
+  system.createAgent("player2","Player");
+  system.setMainGoal("player1",["X",true]);
+  system.setMainGoal("player2",["O",false]); 
+  //da far diventare solo 2 parametri input
+
+
+}
+
+}

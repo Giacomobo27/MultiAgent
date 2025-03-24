@@ -1,0 +1,54 @@
+package section2;
+
+agent Mover {
+    module Console C;
+
+    types mover {
+        formula location(string);
+        formula connected(string, string);
+        formula current(string);
+    }
+
+    initial location("corridor"), location("bedroom"), location("lounge"), location("kitchen"),
+            location("bathroom"), location("dining_room"), location("office");
+    initial connected("corridor", "bedroom"), connected("bedroom", "corridor");
+    initial connected("corridor", "lounge"), connected("lounge", "corridor");
+    initial connected("corridor", "bathroom"), connected("bathroom", "corridor");
+    initial connected("corridor", "office"), connected("office", "corridor");
+    initial connected("kitchen", "lounge"), connected("lounge", "kitchen");
+    initial connected("dining_room", "lounge"), connected("lounge", "dining_room");
+    
+    initial current("bedroom");
+
+    //------------------------------------------------------------
+    // MEANS-ENDS RULES
+    //------------------------------------------------------------
+    rule +!current(string target) : current(target) { }
+
+    rule +!current(string target)
+            : current(string location) & connected(location, target)  {
+        -+current(target);
+        C.println("Moved to: " + target);
+    }
+
+    rule +!current(string target)
+            : current(string location) & connected(location, string middle)
+            & connected(middle, target) {
+        C.println("No direct route, moving via: " + middle);
+        !current(middle);
+        !current(target);
+    }
+
+    rule +!current(string target)
+            : current(string location) & connected(location, string middle)
+            & connected(middle, string middle2) & connected(middle2, target) {
+        C.println("No direct route, moving via: " + middle + " and: " +middle2);
+        !current(middle);
+        !current(middle2);
+        !current(target);
+    }
+
+    rule +!current(string target) : current(string location) {
+        C.println("COULD NOT FIND ROUTE...");
+    }
+}

@@ -1,0 +1,26 @@
+agent Main {
+    module EIS ei;
+    module Console C;
+
+    rule +!main(list args) {
+        ei.launch("hw","dependency/tower-1.3.0.jar");
+        ei.init();
+        ei.start();
+        ei.link("gripper");
+        C.println("Press New Block until block d is created...");
+        wait(ei.block("d"));
+        C.println("You did it!"); 
+        ei.pickup("d");
+        wait(ei.holding("d"));
+        ei.putdown("d", "c");
+        wait(ei.on("d", "c"));
+    }
+
+    rule +$ei.event(holding(string Y)) {
+        C.println("I picked up: " + Y);
+    }
+
+    rule +$ei.event(funct Y) {
+        C.println("Handling belief update: " + Y);
+    }
+}

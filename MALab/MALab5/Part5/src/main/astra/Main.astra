@@ -1,0 +1,19 @@
+agent Main {
+
+ module System system;
+ module Console C;
+
+rule +!main(list args) {
+  system.createAgent("player1","BetterR");
+  system.createAgent("player2","Opponent");
+  system.setMainGoal("player2",["X","player1",false]); 
+   system.setMainGoal("player1",["O","player2",true]);
+
+  // if BetterR start first, it has a 80% winning rate (empiric data)
+  // if BetterR start second, it has a 40% winnin rate
+  //so with an average 60% winning rate against opponent, it is actually a better strategy
+
+
+}
+
+}

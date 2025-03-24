@@ -1,0 +1,28 @@
+package section2;
+
+agent HomerExample extends Homer {
+    initial in("office", "desk"), in("bedroom", "bed"), in("kitchen", "fridge"),
+            in("bathroom", "shower"), in("lounge", "couch"), in("kitchen", "cooker"),
+            in("dining_room", "table"), in("lounge", "tv");
+    
+    initial needs("breakfast", "fridge");
+    initial needs("lunch", "fridge");
+    initial needs("make_dinner", "cooker");
+    initial needs("eat_dinner", "table");
+    initial needs("wash", "shower");
+    initial needs("work", "desk");
+    initial needs("watch_tv", "tv");
+    initial needs("sleep", "bed");
+
+    initial daily_schedule(7, "breakfast");
+    initial daily_schedule(8, "wash");
+    initial daily_schedule(9, "work");
+    initial daily_schedule(13, "lunch");
+    initial daily_schedule(14, "work");
+    initial daily_schedule(17, "make_dinner");
+    initial daily_schedule(18, "eat_dinner");
+    initial daily_schedule(19, "watch_tv");
+    initial daily_schedule(22, "sleep");
+
+    initial activity("sleep");
+}

@@ -1,0 +1,65 @@
+agent VacBot { 
+module EIS ei; 
+module Console C; 
+
+types world {
+    formula free(string);
+}
+
+
+
+inference free(string S) :- ei.square( S ,"dust") | ei.square( S ,"empty");
+
+rule +!main([string vacbot]) { 
+ ei.join("hw"); 
+ ei.link(vacbot); 
+ C.println("VacBot activated"); 
+} 
+
+rule +$ei.event(location(long X, long y)) {
+     !task(string action); 
+}
+
+rule +!task(string action) : ei.square("here", "dust"){
+ ei.clean(); 
+ action = "clean"; 
+ !task(action);
+}
+
+rule +!task(string action) : ei.square("forward", "dust"){
+ ei.move("forward"); 
+ action = "move"; 
+}
+
+rule +!task(string action) : ei.square("left", "dust"){
+ ei.move("left"); 
+ action = "move"; 
+}
+
+rule +!task(string action) : ei.square("right", "dust"){
+ ei.move("right"); 
+ action = "move"; 
+}
+
+rule +!task(string action) : free("forward"){
+ ei.move("forward"); 
+ action = "move"; 
+}
+
+rule +!task(string action) : free("left"){  //prioritize left
+ ei.move("left"); 
+ action = "move"; 
+}
+
+rule +!task(string action) : free("right"){
+ ei.move("right"); 
+ action = "move"; 
+}
+
+
+
+
+
+
+
+}

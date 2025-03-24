@@ -1,0 +1,82 @@
+agent Main {
+    module EIS ei;
+    module Console C;
+    module System S;
+
+    types world {
+        formula free(string);
+        formula tower(string,string,string);
+    }
+
+    
+
+    rule +!main(list args) {
+        ei.launch("hw","dependency/tower-1.3.0.jar");
+        ei.init();
+        ei.start();
+        ei.link("gripper");
+        C.println("Press New Block until block d is created...");
+
+    }
+    //deliberation rule
+    rule +$ei.event(block("d")) {
+        C.println("You did it! new");
+        !tower("a", "b", "c");
+        !tower("d","c","b");
+    } 
+
+    //means to end rule kinda
+
+    rule +!tower(string A, string B, string C) {
+        !on(C, "table");
+        !on(B, C);
+        !on(A, B);
+    }
+
+    inference tower(string A, string B, string C) :- 
+        ei.on(A, B) & ei.on(B, C) & ei.on(C, string “table”);
+
+    rule +!on(string A, string B) : ei.on(A, B) {}
+
+    rule +!on(string A, string B) : ei.holding(A) & free(B) {
+        ei.putdown(A, B);
+        wait(ei.on(A, B));
+    }
+     
+    rule +!on(string A, string B) : ~free(B) {
+        !free(B);
+        !on(A, B);
+    }
+    rule +!on(string A, string B) : ~ei.holding(A) {
+        !holding(A);
+        !on(A, B);
+    }
+
+    inference free(string A) :- ~ei.on(string B, A);
+    //definisco free
+    rule +!free(string A) : free(A) {}
+    //free A se A non è free
+    //caso1 B sopra A e B è free 
+    //caso 2 C sopra B sopra A e C è free
+    //caso 3 A è holding
+    
+
+
+
+
+
+    rule +$ei.event(holding(string Y)) {
+        C.println("Picked up: " + Y);
+    }
+
+    rule +$ei.event(funct Y) {
+        C.println("Handling belief update: " + Y);
+    }
+
+    rule +$ei.event(funct belief) {
+        C.println("New Perception Event: " + belief);
+    }
+    rule +$ei.event(on(string A, string B)) {
+        C.println(A + " has been placed on: " + B);
+    }   
+}

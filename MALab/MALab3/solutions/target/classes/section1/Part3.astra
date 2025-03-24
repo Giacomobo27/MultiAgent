@@ -1,0 +1,68 @@
+package section1;
+
+agent Part3 {
+    module Console C;
+    module System S;
+    
+    types light {
+        formula switch(string, string);
+        formula light(string, string);
+        formula connected(string, string);
+        formula transition(string, string);
+        formula flashed(string, int);
+    }
+
+    initial switch("s1", "off"), light("l1", "on"), light("l2", "off");
+    initial connected("s1", "l1"), connected("s1", "l2");
+    initial transition("off","on"), transition("on","off");
+
+    rule +!main(list args) {
+        !flashed("l1", 10);
+    }
+
+    rule +!flashed(string light, 0) { }
+
+    rule +!flashed(string light, int times)
+            : connected (string switch, light) & flashed(light, int T) { 
+                //it means if i have the goal :flashed t times  and the swithc is connected to the light in conditional context
+        !switch(switch, "off");
+        S.sleep(1000);
+        !switch(switch, "on");
+        S.sleep(1000);
+        !switch(switch, "off");
+
+        -flashed(light, T);  //è ricorsivo greveee
+        +flashed(light, T+1);
+        !flashed(light, times-1);
+    }
+
+    rule +!flashed(string light, int times) {
+        +flashed(light, 0);
+        !flashed(light, times);
+    }
+
+    rule +!switch(string S, string state) : switch(S, state) { }
+    rule +!switch(string S, string state)
+            : transition(string from, state) & switch(S, from) {
+        -switch(S, from);
+        +switch(S, state);
+    }
+    
+    atomic rule +switch(string S, string state) { 
+        foreach(connected(S, string L)) {
+            !light(L, state);
+        }
+    }
+
+    rule +!light(string L, string state) : light(L, state) { }
+
+    rule +!light(string L, string state)
+            : transition(string from, state) & light(L, from) {
+        -light(L, from);
+        +light(L, state);
+    }
+
+    rule +light(string L, string state) {
+        C.println("Light: " + L +" is in state: " + state);
+    }
+} 

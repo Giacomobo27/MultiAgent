@@ -1,0 +1,39 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>examples</groupId>
+	<artifactId>test</artifactId>
+	<name>examples-test</name>
+	<description>Base project for ASTRA applications</description>
+	<version>0.1.0</version>
+	<packaging>jar</packaging>
+
+	<parent>
+		<groupId>com.astralanguage</groupId>
+		<artifactId>astra-base</artifactId>
+		<version>1.4.2</version>
+	</parent>
+
+	<properties>
+		<!-- <astra.main>section1.Part1</astra.main> -->
+		<!-- <astra.main>section1.Part2</astra.main> -->
+		<!-- <astra.main>section1.Part3</astra.main> -->
+		<!-- <astra.main>section2.MoverExample</astra.main> -->
+		<!-- <astra.main>section2.Clock</astra.main> -->
+		<!-- <astra.main>section2.DailyExample</astra.main> -->
+		<!-- <astra.main>section2.HomerExample</astra.main> -->
+		<!-- <astra.main>section3.Building</astra.main> -->
+		<astra.main>example.LightSwitch</astra.main>
+	</properties>
+    <build>
+        <defaultGoal>clean compile astra:deploy</defaultGoal>
+        <plugins>
+            <plugin>
+                <groupId>com.astralanguage</groupId>
+                <artifactId>astra-maven-plugin</artifactId>
+                <version>1.4.2</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>
